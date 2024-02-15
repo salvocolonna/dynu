@@ -9,6 +9,7 @@ export const axios = Axios.create()
 
 export const dynuAxios = Axios.create({
   baseURL: 'https://api.dynu.com/v2',
+  headers: { accept: 'application/json' },
 }) as DynuAxiosInstance
 
 dynuAxios.interceptors.request.use(
