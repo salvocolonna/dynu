@@ -4,17 +4,30 @@ import Log from './utils/log'
 import * as moment from 'moment'
 import 'moment/locale/it.js'
 
+require('dotenv').config()
+
 moment.locale('it')
 
-;(async function () {
+async function start() {
   const { data: jwt } = await DynuApi.authenticate()
   dynuAxios.setDefaults({
     headers: { Authorization: `Bearer ${jwt['access_token']}` },
   })
+  Log.debug(
+    'dynuAxios instance has set new headers:',
+    JSON.stringify(dynuAxios.defaults.headers, undefined, 2),
+  )
 
   const { data: publicIp } = await axios.get('https://ifconfig.me/ip')
+  Log.debug('Public IP retrieved from ifconfig.me:', publicIp)
 
   const { data: dnsListResponse } = await DynuApi.listDns()
+  Log.debug(
+    'DNS/IP Associations retrieved from dynu:',
+    (dnsListResponse.domains ?? [])
+      .map((d) => `[${d.name} - ${d.ipv4Address}]`)
+      .join(', '),
+  )
   for (let dns of dnsListResponse.domains) {
     const dnsMsg = `[${dns.name}] - `
     if (dns.ipv4Address === publicIp) {
@@ -50,4 +63,6 @@ moment.locale('it')
   }
 
   Log.divider()
-})()
+}
+
+start()
