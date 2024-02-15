@@ -1,4 +1,4 @@
-import Axios, { AxiosRequestConfig, AxiosInstance, AxiosResponse } from 'axios'
+import Axios, { AxiosRequestConfig, AxiosInstance, AxiosError } from 'axios'
 import Log from '../utils/log'
 
 type DynuAxiosInstance = AxiosInstance & {
@@ -18,21 +18,15 @@ dynuAxios.interceptors.request.use(
     return req
   },
   (err) => {
-    Log.error('dynuAxios - Request:', err)
+    Log.error('dynuAxios - Request:', JSON.stringify(err, undefined, 2))
     Promise.reject(err)
   },
 )
 
-dynuAxios.interceptors.response.use(
-  (res: AxiosResponse) => res,
-  (err) => {
-    Log.error(
-      'dynuAxios - Response: ',
-      err,
-      err.response ? JSON.stringify(err.response, undefined, 2) : undefined,
-    )
-    Promise.reject(err)
-  },
-)
+dynuAxios.interceptors.response.use(undefined, (err: AxiosError) => {
+  Log.error('dynuAxios - Response: ', err.message)
+  Log.debug('dynuAxios - Response: ', JSON.stringify(err, undefined, 2))
+  Promise.reject(err)
+})
 
 dynuAxios.setDefaults = (config) => Object.assign(dynuAxios.defaults, config)
