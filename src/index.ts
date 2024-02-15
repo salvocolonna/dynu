@@ -9,6 +9,8 @@ require('dotenv').config()
 moment.locale('it')
 
 async function start() {
+  Log.divider()
+
   const { data: jwt } = await DynuApi.authenticate()
   dynuAxios.setDefaults({
     headers: { Authorization: `Bearer ${jwt['access_token']}` },
@@ -61,8 +63,6 @@ async function start() {
       )
     }
   }
-
-  Log.divider()
 }
 
 start()
