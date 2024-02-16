@@ -19,14 +19,13 @@ dynuAxios.interceptors.request.use(
   },
   (err) => {
     Log.error('dynuAxios - Request:', JSON.stringify(err, undefined, 2))
-    Promise.reject(err)
+    return Promise.reject(err)
   },
 )
 
 dynuAxios.interceptors.response.use(undefined, (err: AxiosError) => {
   Log.error('dynuAxios - Response: ', err.message)
-  Log.debug('dynuAxios - Response: ', JSON.stringify(err, undefined, 2))
-  Promise.reject(err)
+  return Promise.reject(err)
 })
 
 dynuAxios.setDefaults = (config) => Object.assign(dynuAxios.defaults, config)

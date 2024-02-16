@@ -1,6 +1,6 @@
 import { AxiosResponse } from 'axios'
 import { dynuAxios } from './axios'
-import { DynuJwt, DynuDns, DynuUpdateDnsRequest } from '../model'
+import { DynuDns, DynuJwt, DynuUpdateDnsRequest } from '../model'
 import Log from '../utils/log'
 
 type DynuAuthenticationResponse = AxiosResponse<DynuJwt>
@@ -12,8 +12,22 @@ type DynuDnsListResponse = AxiosResponse<{
 
 type DynuDnsUpdateResponse = AxiosResponse<{ statusCode: number }>
 
-export const DynuApi = {
-  authenticate: (): Promise<DynuAuthenticationResponse> => {
+async function withRetry<T>(execute: () => Promise<T>): Promise<T> {
+  let attempts = 0
+  while (attempts < 5) {
+    try {
+      return await execute()
+    } catch (error) {
+      attempts++
+      Log.error(`Operation failed! Retrying attempt ${attempts}...`)
+    }
+  }
+  Log.error(`${attempts} failed. Cannot continue!`)
+  throw new Error('withRetry failed after multiple attempts')
+}
+
+abstract class DynuApi {
+  static async authenticate(): Promise<DynuAuthenticationResponse> {
     const clientId = process.env.DYNU_CLIENT_ID
     const clientSecret = process.env.DYNU_CLIENT_SECRET
     Log.debug(
@@ -23,16 +37,26 @@ export const DynuApi = {
       'clientSecret:',
       clientSecret,
     )
-    return dynuAxios.get('/oauth2/token', {
-      headers: {
-        accept: 'application/json',
-        Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
-      },
-    })
-  },
-  listDns: (): Promise<DynuDnsListResponse> => dynuAxios.get('/dns'),
-  updateDns: (
+    return withRetry(() =>
+      dynuAxios.get('/oauth2/token', {
+        headers: {
+          accept: 'application/json',
+          Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
+        },
+      }),
+    )
+  }
+
+  static async listDns(): Promise<DynuDnsListResponse> {
+    return withRetry(() => dynuAxios.get('/dns'))
+  }
+
+  static async updateDns(
     id: string,
     request: DynuUpdateDnsRequest,
-  ): Promise<DynuDnsUpdateResponse> => dynuAxios.post(`/dns/${id}`, request),
+  ): Promise<DynuDnsUpdateResponse> {
+    return withRetry(() => dynuAxios.post(`/dns/${id}`, request))
+  }
 }
+
+export { DynuApi }
